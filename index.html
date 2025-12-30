@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>hydra数游戏 - 数学蛇群挑战</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Roboto+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1><i class="fas fa-dragon"></i> hydra数游戏</h1>
+            <p class="subtitle">数学蛇群挑战 - 基于hydra数学概念的增长率游戏</p>
+        </header>
+
+        <div class="game-status">
+            <div class="status-item" id="current-snake-status">
+                <i class="fas fa-crosshairs"></i>
+                <span>准备开始游戏</span>
+            </div>
+            <div class="status-item" id="total-snakes-status">
+                <i class="fas fa-snake"></i>
+                <span>总蛇数: 0</span>
+            </div>
+            <div class="status-item" id="attack-count-status">
+                <i class="fas fa-fist-raised"></i>
+                <span>攻击次数: 0</span>
+            </div>
+            <div class="status-item" id="game-state-status">
+                <i class="fas fa-gamepad"></i>
+                <span>游戏状态: 等待开始</span>
+            </div>
+        </div>
+
+        <main class="game-container">
+            <!-- 左侧玩家控制区 -->
+            <section class="player-panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-user"></i> 玩家控制</h2>
+                </div>
+                
+                <!-- 玩家形象展示 -->
+                <div class="player-visual-section">
+                    <div class="player-visual">
+                        <div class="player-icon">
+                            <i class="fas fa-user-ninja fa-3x"></i>
+                        </div>
+                        <div class="player-info">
+                            <div class="player-status">
+                                <i class="fas fa-bolt"></i>
+                                <span>攻击力: <span id="player-attack-power">1</span></span>
+                            </div>
+                            <div class="player-status">
+                                <i class="fas fa-coins"></i>
+                                <span>金币: <span id="player-gold">0</span></span>
+                            </div>
+                            <div class="player-status">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>武器: <span id="player-weapon-display">剑</span></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 攻击力升级系统 -->
+                <div class="control-section">
+                    <h3><i class="fas fa-swords"></i> 武器升级</h3>
+                    <div class="upgrade-system">
+                        <div class="upgrade-info">
+                            <div class="upgrade-item">
+                                <span>当前攻击力:</span>
+                                <span id="current-attack-power">1</span>
+                            </div>
+                            <div class="upgrade-item">
+                                <span>下一级攻击力:</span>
+                                <span id="next-attack-power">2</span>
+                            </div>
+                            <div class="upgrade-item">
+                                <span>升级所需:</span>
+                                <span id="upgrade-cost">1</span> 金币
+                            </div>
+                            <div class="upgrade-item">
+                                <span>当前金币:</span>
+                                <span id="current-gold">0</span>
+                            </div>
+                        </div>
+                        <div class="upgrade-buttons">
+                            <button id="upgrade-btn" class="btn btn-success">
+                                <i class="fas fa-level-up-alt"></i> 升级武器
+                            </button>
+                            <button id="auto-upgrade-btn" class="btn btn-info">
+                                <i class="fas fa-robot"></i> 自动升级
+                            </button>
+                        </div>
+                        <div class="upgrade-hint">
+                            <small><i class="fas fa-info-circle"></i> 每次升级攻击力翻倍，花费翻倍。启用自动升级后，金币足够时自动升级</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3><i class="fas fa-play-circle"></i> 游戏控制</h3>
+                    <div class="control-buttons">
+                        <button id="attack-btn" class="btn btn-primary">
+                            <i class="fas fa-bolt"></i> 攻击当前蛇
+                        </button>
+                        <button id="auto-attack-btn" class="btn btn-secondary">
+                            <i class="fas fa-robot"></i> 自动攻击
+                        </button>
+                        <button id="reset-btn" class="btn btn-warning">
+                            <i class="fas fa-redo"></i> 重置游戏
+                        </button>
+                    </div>
+
+                    <!-- 自动攻击速度控制 -->
+                    <div class="auto-speed-control" style="margin-top: 12px;">
+                        <div class="speed-control-header">
+                            <small><i class="fas fa-tachometer-alt"></i> 攻击速度:</small>
+                            <span id="current-speed-display" class="speed-display">快 (0.1秒/次)</span>
+                        </div>
+                        <div class="speed-buttons">
+                            <button id="speed-slow-btn" class="btn btn-small btn-outline-secondary" data-speed="1000">
+                                <i class="fas fa-turtle"></i> 慢
+                            </button>
+                            <button id="speed-medium-btn" class="btn btn-small btn-outline-secondary" data-speed="500">
+                                <i class="fas fa-walking"></i> 中
+                            </button>
+                            <button id="speed-fast-btn" class="btn btn-small btn-outline-secondary active" data-speed="100">
+                                <i class="fas fa-running"></i> 快
+                            </button>
+                            <button id="speed-veryfast-btn" class="btn btn-small btn-outline-secondary" data-speed="50">
+                                <i class="fas fa-bolt"></i> 极快
+                            </button>
+                        </div>
+                        <div class="speed-hint">
+                            <small><i class="fas fa-info-circle"></i> 使用 ← → 箭头键调整速度</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 武器选择系统 -->
+                <div class="control-section">
+                    <h3><i class="fas fa-gavel"></i> 武器选择</h3>
+                    <div class="weapon-system">
+                        <div class="weapon-info">
+                            <div class="weapon-status">
+                                <span>当前武器:</span>
+                                <span id="current-weapon-display" class="weapon-name">剑</span>
+                            </div>
+                            <div class="weapon-description">
+                                <small><i class="fas fa-info-circle"></i> <span id="weapon-description-display">蛇每受到x点伤害掉落x片鳞片，其它蛇HP上限增加x</span></small>
+                            </div>
+                        </div>
+                        <div class="weapon-buttons">
+                            <button id="weapon-sword-btn" class="btn btn-success">
+                                <i class="fas fa-bolt"></i> 剑
+                            </button>
+                            <button id="weapon-hammer-btn" class="btn btn-outline-warning">
+                                <i class="fas fa-hammer"></i> 锤
+                            </button>
+                        </div>
+                        <div class="weapon-hint">
+                            <small><i class="fas fa-sync-alt"></i> 更换武器免费，立即生效</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-cog"></i> 游戏设置</h3>
+                    <div class="settings">
+                        <div class="setting-item">
+                            <label for="initial-heads">
+                                <i class="fas fa-heading"></i> 初始蛇头数:
+                            </label>
+                            <input type="number" id="initial-heads" min="2" max="10" value="4">
+                        </div>
+                        <div class="setting-item">
+                            <label for="number-format">
+                                <i class="fas fa-calculator"></i> 数字显示格式:
+                            </label>
+                            <select id="number-format">
+                                <option value="auto">自动 (科学计数法)</option>
+                                <option value="scientific">科学计数法</option>
+                                <option value="chinese">中文单位</option>
+                                <option value="full">完整数字</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3><i class="fas fa-chart-line"></i> 游戏统计</h3>
+                    <div class="stats">
+                        <div class="stat-item">
+                            <span>最大蛇头数:</span>
+                            <span id="max-heads-stat">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>最大HP上限:</span>
+                            <span id="max-hp-stat">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>总鳞片数:</span>
+                            <span id="total-scales-stat">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>击杀蛇总数:</span>
+                            <span id="total-killed-stat">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span>游戏时间:</span>
+                            <span id="game-time-stat">0秒</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- 右侧蛇群显示区 -->
+            <section class="snakes-panel">
+                <div class="panel-header">
+                    <h2><i class="fas fa-dragon"></i> 蛇群状态</h2>
+                </div>
+                
+                <div class="current-snake-section">
+                    <h3><i class="fas fa-crosshairs"></i> 当前攻击目标</h3>
+                    <div class="current-snake-display">
+                        <div class="snake-visual">
+                            <!-- 蛇图标显示 -->
+                            <div class="snake-icon-container">
+                                <div class="snake-icon" id="current-snake-icon">
+                                    <i class="fas fa-dragon fa-3x"></i>
+                                </div>
+                                <div class="snake-heads-badge" id="snake-heads-badge">
+                                    <span id="current-heads-icon">5</span>头
+                                </div>
+                                <!-- 斩击特效容器 -->
+                                <div class="slash-effect-container" id="slash-effect-container"></div>
+                            </div>
+                            
+                            <div class="snake-heads">
+                                <i class="fas fa-heading"></i>
+                                <span id="current-heads">5</span>头蛇
+                                <span class="target-order">(第<span id="current-target-order">1</span>个目标)</span>
+                            </div>
+                            <div class="snake-hp">
+                                <div class="hp-label">
+                                    <span>HP:</span>
+                                    <span id="current-hp">1</span>/<span id="max-hp">1</span>
+                                </div>
+                                <div class="hp-bar-container">
+                                    <div class="hp-bar" id="hp-bar"></div>
+                                </div>
+                            </div>
+                            <div class="snake-scales">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>鳞片:</span>
+                                <span id="current-scales">0</span>
+                            </div>
+                        </div>
+                        
+                            <div class="snake-info">
+                                <div class="info-row">
+                                    <span>攻击效果:</span>
+                                    <span id="attack-effect">造成1点伤害</span>
+                                </div>
+                                <div class="info-row death-info-row">
+                                    <span>死亡时:</span>
+                                    <span id="snakes-death-info">不再分裂</span>
+                                </div>
+                                <div class="info-row">
+                                    <span>其它蛇的最大HP:</span>
+                                    <span id="other-snakes-max-hp">1</span>
+                                </div>
+                            </div>
+                    </div>
+                </div>
+
+                <div class="remaining-snakes-section">
+                    <h3><i class="fas fa-list-ol"></i> 剩余蛇群统计</h3>
+                    <div class="snakes-icons-container" id="snakes-icons-container">
+                        <!-- 动态生成的蛇图标卡片 -->
+                        <div class="empty-snakes-message">
+                            <i class="fas fa-question-circle fa-2x"></i>
+                            <p>暂无蛇群数据</p>
+                        </div>
+                    </div>
+                    <div class="snakes-summary">
+                        <div class="summary-item">
+                            <span>蛇群种类:</span>
+                            <span id="snake-types-count">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>总蛇数:</span>
+                            <span id="total-snakes-count">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>最小头数:</span>
+                            <span id="min-heads-count">-</span>
+                        </div>
+                        <div class="summary-item">
+                            <span>击杀总数:</span>
+                            <span id="total-killed-summary">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="game-log-section">
+                    <h3><i class="fas fa-scroll"></i> 游戏日志</h3>
+                    <div class="log-container">
+                        <div class="log-entries" id="game-log">
+                            <div class="log-entry">欢迎来到Hydra数游戏！点击"攻击当前蛇"开始游戏。</div>
+                        </div>
+                        <div class="log-controls">
+                            <button id="clear-log-btn" class="btn btn-small">
+                                <i class="fas fa-trash"></i> 清空日志
+                            </button>
+                            <button id="pause-log-btn" class="btn btn-small">
+                                <i class="fas fa-pause"></i> 暂停滚动
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <div class="footer-content">
+                <div class="game-rules">
+                    <h4><i class="fas fa-book"></i> 游戏规则摘要</h4>
+                    <ul>
+                        <li>攻击蛇造成伤害，蛇每受到一点伤害掉落一片鳞片，HP为0时死亡。</li>
+                        <li>N头蛇死亡时，掉落的每片鳞片都会变为一条(N-1)头蛇</li>
+                        <li>- 换言之，蛇的HP上限是多少，被击杀后就会分裂成多少条小蛇</li>
+                        <li>1头蛇死亡不分裂，被彻底击杀</li>
+                        <li>每次攻击使其它所有蛇HP上限增加，增加值为本次造成的伤害</li>
+                        <li>当前蛇死亡后，必须优先攻击头最少的蛇</li>
+                        <li>所有蛇死亡时游戏胜利</li>
+                    </ul>
+                </div>
+                <div class="footer-info">
+                    <p>hydra数游戏 - 基于数学中的hydra数概念</p>
+                    <p>使用BigInt处理极大数字，支持科学计数法显示</p>
+                    <p class="copyright">By 小梨Orioli & Deepseek AI</p>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <!-- JavaScript模块 -->
+    <script src="bigNumber.js" type="module"></script>
+    <script src="gameState.js" type="module"></script>
+    <script src="uiManager.js" type="module"></script>
+    <script src="script.js" type="module"></script>
+</body>
+</html>
