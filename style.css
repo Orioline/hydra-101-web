@@ -758,28 +758,6 @@ body {
     z-index: 11;
 }
 
-/* 斩击特效变体 - 红色版本 */
-.slash-effect.red {
-    background: linear-gradient(90deg, 
-        rgba(255, 0, 0, 0) 0%, 
-        rgba(255, 100, 100, 0.9) 20%, 
-        rgba(255, 50, 50, 0.9) 50%, 
-        rgba(255, 100, 100, 0.9) 80%, 
-        rgba(255, 0, 0, 0) 100%);
-    filter: drop-shadow(0 0 8px rgba(255, 50, 50, 0.8));
-}
-
-/* 斩击特效变体 - 蓝色版本 */
-.slash-effect.blue {
-    background: linear-gradient(90deg, 
-        rgba(0, 150, 255, 0) 0%, 
-        rgba(100, 200, 255, 0.9) 20%, 
-        rgba(50, 150, 255, 0.9) 50%, 
-        rgba(100, 200, 255, 0.9) 80%, 
-        rgba(0, 150, 255, 0) 100%);
-    filter: drop-shadow(0 0 8px rgba(50, 150, 255, 0.8));
-}
-
 /* 蛇群图标卡片布局 */
 .snakes-icons-container {
     display: flex;

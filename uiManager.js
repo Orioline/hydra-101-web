@@ -3,7 +3,160 @@
  * 负责更新游戏界面和用户交互
  */
 
-import { formatNumber } from './bigNumber.js';
+// 直接使用全局的 ExpantaNum 变量
+const ExpantaNum = window.ExpantaNum;
+
+// 检查 ExpantaNum 是否已加载
+if (typeof ExpantaNum !== 'function') {
+    console.error('ExpantaNum 未正确加载。请确保 ExpantaNum.js 已通过 script 标签引入。');
+}
+
+// 创建一些常用常量
+const ZERO = new ExpantaNum(0);
+const ONE = new ExpantaNum(1);
+
+/**
+ * 格式化数字为可读字符串
+ * @param {ExpantaNum|number|string} num - 要格式化的数字
+ * @param {string} format - 格式类型：'auto', 'scientific', 'chinese', 'full'
+ * @returns {string} 格式化后的字符串
+ */
+function formatNumber(num, format = 'auto') {
+    try {
+        // 确保是ExpantaNum实例
+        let enNum;
+        if (num instanceof ExpantaNum) {
+            enNum = num;
+        } else {
+            enNum = new ExpantaNum(num);
+        }
+        
+        // 根据格式选择格式化方法
+        switch (format) {
+            case 'scientific':
+                return enNum.toExponential(4);
+            case 'chinese':
+                // 简单的中文单位转换实现
+                return formatChinese(enNum);
+            case 'full':
+                return enNum.toString();
+            case 'auto':
+            default:
+                return autoFormat(enNum);
+        }
+    } catch (e) {
+        console.warn('格式化数字时出错:', e);
+        return String(num);
+    }
+}
+
+/**
+ * 自动格式化：根据数字大小选择最佳格式
+ */
+function autoFormat(enNum) {
+    try {
+        // 尝试转换为JavaScript数字检查大小
+        const num = enNum.toNumber();
+        
+        if (!isFinite(num)) {
+            // 数字太大，无法用Number表示
+            return enNum.toString();
+        }
+        
+        if (Math.abs(num) >= 1e6) {
+            return enNum.toExponential(4);
+        }
+        
+        // 小数字直接显示
+        return enNum.toString();
+    } catch (e) {
+        // 如果转换失败，使用科学计数法
+        return enNum.toExponential(4);
+    }
+}
+
+/**
+ * 转换为中文单位表示（简化版本）
+ */
+function formatChinese(enNum) {
+    try {
+        const num = enNum.toNumber();
+        if (!isFinite(num)) {
+            return enNum.toExponential(4);
+        }
+        
+        const absNum = Math.abs(num);
+        if (absNum < 10000) {
+            return num.toString();
+        }
+        
+        const chineseUnits = ['', '万', '亿', '兆', '京', '垓', '秭', '穰', '沟', '涧', '正', '载'];
+        let unitIndex = 0;
+        let scaled = absNum;
+        
+        while (scaled >= 10000 && unitIndex < chineseUnits.length - 1) {
+            scaled /= 10000;
+            unitIndex++;
+        }
+        
+        const formatted = scaled.toFixed(2).replace(/\.?0+$/, '');
+        const sign = num < 0 ? '-' : '';
+        return `${sign}${formatted}${chineseUnits[unitIndex]}`;
+    } catch (e) {
+        return enNum.toExponential(4);
+    }
+}
+
+/**
+ * 大数字加法
+ */
+function addBigInt(a, b) {
+    try {
+        const aNum = a instanceof ExpantaNum ? a : new ExpantaNum(a);
+        return aNum.add(b);
+    } catch (e) {
+        console.warn('加法运算时出错:', e);
+        return ZERO;
+    }
+}
+
+/**
+ * 大数字乘法
+ */
+function multiplyBigInt(a, b) {
+    try {
+        const aNum = a instanceof ExpantaNum ? a : new ExpantaNum(a);
+        return aNum.mul(b);
+    } catch (e) {
+        console.warn('乘法运算时出错:', e);
+        return ZERO;
+    }
+}
+
+/**
+ * 大数字除法
+ */
+function divideBigInt(a, b) {
+    try {
+        const aNum = a instanceof ExpantaNum ? a : new ExpantaNum(a);
+        return aNum.div(b);
+    } catch (e) {
+        console.warn('除法运算时出错:', e);
+        return ZERO;
+    }
+}
+
+// BigNumberUtils.create的替代
+function createBigNumber(value) {
+    return new ExpantaNum(value);
+}
+
+// 为兼容性保留BigNumberUtils名称
+const BigNumberUtils = {
+    create: createBigNumber,
+    ZERO: ZERO,
+    ONE: ONE
+};
 
 export class UIManager {
     constructor(gameState) {
@@ -311,17 +464,6 @@ export class UIManager {
         // 创建斩击特效元素
         const slashEffect = document.createElement('div');
         slashEffect.className = 'slash-effect';
-        
-        // 根据攻击力选择不同的颜色
-        const state = this.gameState.getExtendedGameState();
-        if (state.attackPower >= 10n) {
-            // 高攻击力使用红色特效
-            slashEffect.classList.add('red');
-        } else if (state.attackPower >= 5n) {
-            // 中等攻击力使用蓝色特效
-            slashEffect.classList.add('blue');
-        }
-        // 默认使用金色特效
         
         // 添加到容器
         this.slashEffectContainer.appendChild(slashEffect);
@@ -741,8 +883,11 @@ export class UIManager {
         
         // 更新HP条（使用当前蛇的固定最大HP计算百分比）
         const fixedMaxHP = state.currentSnakeFixedMaxHP || state.maxHP;
-        if (fixedMaxHP > 0n) {
-            const percentage = Number(state.currentHP * 100n / fixedMaxHP);
+        const zero = ZERO;
+        if (fixedMaxHP.gt(zero)) {
+            // 使用bigNumber.js函数计算百分比：currentHP * 100 / fixedMaxHP
+            const percentageBigNum = divideBigInt(multiplyBigInt(state.currentHP, 100), fixedMaxHP);
+            const percentage = percentageBigNum.toNumber();
             this.hpBar.style.width = `${Math.max(0, percentage)}%`;
             
             // 根据HP百分比调整颜色
@@ -773,8 +918,8 @@ export class UIManager {
     updateTargetOrderDisplay(state) {
         if (this.currentTargetOrder) {
             // 计算当前目标序号：击杀蛇总数 + 1
-            // 注意：totalKilledSnakes是BigInt，需要转换为数字或直接使用
-            const targetOrder = state.totalKilledSnakes + 1n;
+            const one = ONE;
+            const targetOrder = addBigInt(state.totalKilledSnakes, one);
             this.currentTargetOrder.textContent = this.format(targetOrder);
         }
     }
@@ -838,7 +983,7 @@ export class UIManager {
             }
         } else {
             // 剑武器：造成x点伤害，x = min(攻击力, 当前蛇HP)
-            const damage = state.attackPower > state.currentHP ? state.currentHP : state.attackPower;
+            const damage = state.attackPower.gt(state.currentHP) ? state.currentHP : state.attackPower;
             this.attackEffectElement.textContent = `造成${this.format(damage)}点伤害`;
         }
     }
@@ -884,8 +1029,11 @@ export class UIManager {
         }
         
         // 根据HP百分比调整图标颜色
-        if (state.maxHP > 0n) {
-            const hpPercentage = Number(state.currentHP * 100n / state.maxHP);
+        const zero = ZERO;
+        if (state.maxHP.gt(zero)) {
+            // 使用bigNumber.js函数计算百分比：currentHP * 100 / maxHP
+            const hpPercentageBigNum = divideBigInt(multiplyBigInt(state.currentHP, 100), state.maxHP);
+            const hpPercentage = hpPercentageBigNum.toNumber();
             
             // 添加受伤效果
             if (hpPercentage < 30) {

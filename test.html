@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ExpantaNum.js 测试</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .test-section {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .controls {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-right: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        button:disabled {
+            background-color: #95a5a6;
+            cursor: not-allowed;
+        }
+        
+        #runTests {
+            background-color: #2ecc71;
+        }
+        
+        #runTests:hover {
+            background-color: #27ae60;
+        }
+        
+        #console {
+            background-color: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            height: 500px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .stat-box {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        
+        .passed { color: #2ecc71; }
+        .failed { color: #e74c3c; }
+        .total { color: #3498db; }
+        
+        .test-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .test-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+        
+        .test-item.passed {
+            border-left: 4px solid #2ecc71;
+        }
+        
+        .test-item.failed {
+            border-left: 4px solid #e74c3c;
+        }
+        
+        .loading {
+            color: #f39c12;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <h1>ExpantaNum.js 测试套件</h1>
+    
+    <div class="controls">
+        <h2>控制面板</h2>
+        <button id="runTests">运行所有测试</button>
+        <button id="clearConsole">清空控制台</button>
+        <button id="exportResults">导出结果</button>
+        
+        <div style="margin-top: 15px;">
+            <label>
+                <input type="checkbox" id="verboseOutput" checked>
+                详细输出
+            </label>
+            <label style="margin-left: 20px;">
+                <input type="checkbox" id="stopOnError">
+                遇到错误时停止
+            </label>
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="test-section">
+            <h2>测试统计</h2>
+            <div class="stats">
+                <div class="stat-box">
+                    <div>总测试数</div>
+                    <div class="stat-value total" id="totalTests">0</div>
+                </div>
+                <div class="stat-box">
+                    <div>通过</div>
+                    <div class="stat-value passed" id="passedTests">0</div>
+                </div>
+                <div class="stat-box">
+                    <div>失败</div>
+                    <div class="stat-value failed" id="failedTests">0</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 20px;">
+                <h3>测试进度</h3>
+                <div id="progressBar" style="height: 20px; background: #ecf0f1; border-radius: 10px; overflow: hidden;">
+                    <div id="progressFill" style="height: 100%; width: 0%; background: #2ecc71; transition: width 0.3s;"></div>
+                </div>
+                <div id="progressText" style="text-align: center; margin-top: 5px;">0%</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>最近测试结果</h2>
+            <div id="testList" class="test-list">
+                <div class="loading">等待测试运行...</div>
+            </div>
+        </div>
+    </div>
+    
+    <h2>控制台输出</h2>
+    <div id="console"></div>
+    
+    <script src="ExpantaNum.js"></script>
+    <script src="test_ExpantaNum.js"></script>
+    <script>
+        // 重写 console.log 和 console.error 以捕获输出
+        const originalLog = console.log;
+        const originalError = console.error;
+        const consoleOutput = document.getElementById('console');
+        
+        function captureConsole(method, element) {
+            return function(...args) {
+                method.apply(console, args);
+                const message = args.map(arg => 
+                    typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+                ).join(' ');
+                element.textContent += message + '\n';
+                element.scrollTop = element.scrollHeight;
+            };
+        }
+        
+        console.log = captureConsole(originalLog, consoleOutput);
+        console.error = captureConsole(originalError, consoleOutput);
+        
+        // 更新统计信息
+        function updateStats() {
+            document.getElementById('totalTests').textContent = window.testStats?.total || 0;
+            document.getElementById('passedTests').textContent = window.testStats?.passed || 0;
+            document.getElementById('failedTests').textContent = window.testStats?.failed || 0;
+            
+            const total = window.testStats?.total || 1;
+            const passed = window.testStats?.passed || 0;
+            const progress = (passed / total) * 100;
+            
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('progressText').textContent = `${Math.round(progress)}%`;
+            
+            // 更新测试列表
+            const testList = document.getElementById('testList');
+            if (window.testStats?.errors && window.testStats.errors.length > 0) {
+                testList.innerHTML = '';
+                window.testStats.errors.forEach((error, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'test-item failed';
+                    div.innerHTML = `
+                        <strong>${error.description}</strong><br>
+                        <small>${error.error}</small>
+                    `;
+                    testList.appendChild(div);
+                });
+            }
+        }
+        
+        // 设置事件监听器
+        document.getElementById('runTests').addEventListener('click', () => {
+            consoleOutput.textContent = '';
+            console.log('开始运行测试...\n' + '='.repeat(50));
+            
+            // 更新配置
+            window.TEST_CONFIG.verbose = document.getElementById('verboseOutput').checked;
+            window.TEST_CONFIG.stopOnError = document.getElementById('stopOnError').checked;
+            
+            // 重置统计
+            window.testStats = {
+                total: 0,
+                passed: 0,
+                failed: 0,
+                errors: []
+            };
+            
+            // 运行测试
+            setTimeout(() => {
+                try {
+                    window.runAllTests();
+                } catch (error) {
+                    console.error('测试运行出错:', error);
+                }
+                
+                // 更新统计信息
+                setTimeout(updateStats, 100);
+            }, 100);
+        });
+        
+        document.getElementById('clearConsole').addEventListener('click', () => {
+            consoleOutput.textContent = '';
+        });
+        
+        document.getElementById('exportResults').addEventListener('click', () => {
+            const results = {
+                timestamp: new Date().toISOString(),
+                stats: window.testStats,
+                config: window.TEST_CONFIG
+            };
+            
+            const blob = new Blob([JSON.stringify(results, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `expantanum-test-results-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            console.log('测试结果已导出');
+        });
+        
+        // 初始更新
+        updateStats();
+        
+        // 自动运行测试（可选）
+        // setTimeout(() => {
+        //     document.getElementById('runTests').click();
+        // }, 1000);
+    </script>
+</body>
+</html>
